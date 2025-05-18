@@ -38,10 +38,14 @@
   </div>
 
   <script>
-    fetch('/results')
-      .then(res => res.json())
-      .then(data => {
+   fetch('/results')
+    .then(res => res.json())
+    .then(data => {
         const tbody = document.getElementById('resultsTableBody');
+        
+        // CLEAR PREVIOUS ROWS HERE
+        tbody.innerHTML = ''; // <-- Add this line to fix the issue
+
         data.processes.forEach(p => {
           const row = `<tr>
             <td>${p.pid}</td>
@@ -54,14 +58,16 @@
           </tr>`;
           tbody.insertAdjacentHTML('beforeend', row);
         });
-        document.getElementById('avgWaiting').textContent = data.avg_waiting_time.toFixed(2);
-        document.getElementById('avgTurnaround').textContent = data.avg_turnaround_time.toFixed(2);
-        document.getElementById('cpuUtil').textContent = data.cpu_utilization.toFixed(2);
-      })
-      .catch(err => {
-        console.error("Failed to fetch results:", err);
-        alert("❌ Error fetching results.");
-      });
+
+    document.getElementById('avgWaiting').textContent = data.avg_waiting_time.toFixed(2);
+    document.getElementById('avgTurnaround').textContent = data.avg_turnaround_time.toFixed(2);
+    document.getElementById('cpuUtil').textContent = data.cpu_utilization.toFixed(2);
+  })
+  .catch(err => {
+    console.error("Failed to fetch results:", err);
+    alert("❌ Error fetching results.");
+  });
+
   </script>
 </body>
 </html>

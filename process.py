@@ -1,4 +1,3 @@
-# Updated process.py
 import threading
 import time
 import subprocess
