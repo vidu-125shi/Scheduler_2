@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CPU Scheduling Simulator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; padding: 20px; }
+    .container { max-width: 700px; }
+    .log-box { height: 300px; overflow-y: auto; background: #212529; color: #0f0; padding: 10px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="mb-4 text-center">🧠 CPU Scheduling Simulator</h2>
+
+    <form id="processForm">
+      <div class="mb-3">
+        <label>Process ID</label>
+        <input type="text" class="form-control" name="pid" required>
+      </div>
+      <div class="mb-3">
+        <label>Arrival Time</label>
+        <input type="number" class="form-control" name="arrival_time" required>
+      </div>
+      <div class="mb-3">
+        <label>Burst Time</label>
+        <input type="number" class="form-control" name="burst_time" required>
+      </div>
+      <div class="mb-3">
+        <label>Priority</label>
+        <input type="number" class="form-control" name="priority">
+      </div>
+      <div class="mb-3">
+        <label>Algorithm</label>
+        <select class="form-select" name="algorithm" id="algorithm">
+          <option value="FCFS">FCFS</option>
+          <option value="SJF">SJF</option>
+          <option value="Round Robin">Round Robin</option>
+          <option value="Priority">Priority</option>
+        </select>
+      </div>
+      <div class="mb-3" id="quantumBox" style="display:none;">
+        <label>Time Quantum</label>
+        <input type="number" class="form-control" id="quantum" value="2">
+      </div>
+      <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-success">Add Process</button>
+        <button type="button" class="btn btn-primary" onclick="startScheduling()">Start Scheduling</button>
+      </div>
+    </form>
+
+    <hr class="my-4">
+    <h5>🗞️ Process Queue</h5>
+    <ul class="list-group mb-3" id="processQueue"></ul>
+    <button id="clearQueueBtn" class="btn btn-danger mt-2" onclick="clearQueue()">🗑️ Clear Process Queue</button>
+
+    <hr class="my-4">
+    <a href="/result.html" class="btn btn-warning mt-3">📊 View Results</a>
+  </div>
+
+  <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('log', msg => {
+      if (msg.includes("Scheduling completed")) {
+        document.getElementById('processQueue').innerHTML = '';
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-success mt-3';
+        alert.textContent = '✅ CPU Scheduling is complete!';
+        document.querySelector('.container').appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+      }
+    });
+
+    document.getElementById('algorithm').addEventListener('change', e => {
+      document.getElementById('quantumBox').style.display = e.target.value === 'Round Robin' ? 'block' : 'none';
+    });
+
+    document.getElementById('processForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = new FormData(e.target);
+      const data = Object.fromEntries(form.entries());
+      data.arrival_time = parseFloat(data.arrival_time);
+      data.burst_time = parseFloat(data.burst_time);
+      data.priority = parseInt(data.priority) || 0;
+
+      const res = await fetch('/add_process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        const queueItem = document.createElement('li');
+        queueItem.className = 'list-group-item';
+        queueItem.textContent = `PID: ${data.pid}, Arrival: ${data.arrival_time}, Burst: ${data.burst_time}, Priority: ${data.priority}`;
+        document.getElementById('processQueue').appendChild(queueItem);
+        e.target.reset();
+      } else {
+        alert("❌ Failed to add process.");
+      }
+    });
+
+    function clearQueue() {
+      document.getElementById('processQueue').innerHTML = '';
+    }
+
+    async function startScheduling() {
+      const algorithm = document.getElementById('algorithm').value;
+      const quantum = document.getElementById('quantum').value;
+      const res = await fetch('/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ algorithm, quantum })
+      });
+      if (!res.ok) alert("Failed to start scheduling.");
+    }
+  </script>
+</body>
+</html>
